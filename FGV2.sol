@@ -72,13 +72,14 @@ contract FenceGame2Contract is ERC20, Ownable, ReentrancyGuard {
             0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D
         );
         gamev1 = IFenceGameContract(0x6dcAfFa85fA06C617E8290f1BABC7091eEE8150f);
-        lastBuyer = address(this);
         freeBlock = block.number + BLOCK_INCREMENT;
+        lastBuyer = address(this);
         passes = 0;
-        growthRate = 1 * 1e18;
-        threshold = 25;
+        growthRate = 15 * 1e18;
+        threshold = 50;
+        //change this to owner
         _mint(address(this), TOTAL_SUPPLY);
-        tradeLimit = _applyBasisPoints(TOTAL_SUPPLY, 250); // 2.5%
+        tradeLimit = _applyBasisPoints(TOTAL_SUPPLY, 150); // 1.5%
         _exempt[owner()] = true;
         _exempt[address(this)] = true;
     }
@@ -110,7 +111,7 @@ contract FenceGame2Contract is ERC20, Ownable, ReentrancyGuard {
     }
 
     function _resume() internal {
-        threshold = gamev1.threshold();
+        passes = gamev1.passes();
         lastBuyer = gamev1.lastBuyer();
     }
 
@@ -118,7 +119,6 @@ contract FenceGame2Contract is ERC20, Ownable, ReentrancyGuard {
     function removeLimitsAndRenounce() external onlyOwner {
         sniperTaxEnabled = false;
         limitsEnabled = false;
-        _resume();
         renounceOwnership();
     }
 
@@ -233,15 +233,11 @@ contract FenceGame2Contract is ERC20, Ownable, ReentrancyGuard {
             return amount;
         }
         uint256 fees = _applyBasisPoints(amount, penalty * 100);
-        //Buy tax 1%
-        if (from == address(uniswapV2Pair)) {
-            fees = _applyBasisPoints(amount, 100);
-        }
-        //Anti snipe tax penalty 25%
+        //Anti snipe tax penalty 40%
         if (sniperTaxEnabled) {
-            fees = _applyBasisPoints(amount, 2500);
+            fees = _applyBasisPoints(amount, 4000);
         }
-        //Limit to 2.5%
+        //Limit to 1.5%
         if (limitsEnabled) {
             fees = _handleLimits(amount, fees);
         }
